@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SiteBuilder V3</title>
+<title>SiteBuilder V4</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#111;color:#eee;overflow:hidden}
 button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -15,9 +15,9 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 .palette{display:grid;grid-template-columns:1fr 1fr;gap:8px}.el{background:#222;border:1px solid #373737;border-radius:8px;padding:12px 7px;text-align:center;color:#ddd}.el:hover{border-color:#7c5cff;background:#29233d}
 .stage-wrap{background:#0d0d0d;overflow:auto;padding:35px;display:flex;justify-content:center;align-items:flex-start}
-.stage{background:white;color:#111;width:900px;min-height:650px;box-shadow:0 12px 45px #000;position:relative;padding:28px;transition:.2s}
-.stage.mobile{width:390px;min-height:700px}.stage.empty:after{content:"Drop elements here";position:absolute;inset:30px;border:2px dashed #bbb;display:grid;place-items:center;color:#aaa;font-size:20px;pointer-events:none}
-.element{position:relative;min-height:10px;margin:6px 0;padding:5px;outline:1px solid transparent}.element:hover{outline:1px dashed #8b72ff}.element.selected{outline:2px solid #7c5cff}.element img{max-width:100%;display:block}.element button{border:0}
+.stage{background:white;color:#111;width:900px;min-height:650px;box-shadow:0 12px 45px #000;position:relative;padding:28px;transition:.2s;box-sizing:border-box;flex:0 0 900px}
+.stage.mobile{width:390px;min-height:700px;flex-basis:390px}.stage.empty:after{content:"Drop elements here";position:absolute;inset:30px;border:2px dashed #bbb;display:grid;place-items:center;color:#aaa;font-size:20px;pointer-events:none}
+.element{position:relative;min-height:10px;margin:6px 0;padding:5px;outline:1px solid transparent;box-sizing:border-box;max-width:100%}.element:hover{outline:1px dashed #8b72ff}.element.selected{outline:2px solid #7c5cff}.element img{max-width:100%;display:block}.element button{border:0}
 .row{display:flex;gap:7px}.field{margin-bottom:12px}.field label{display:block;font-size:11px;color:#aaa;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:8px}.field textarea{min-height:75px;resize:vertical}
 .richbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;background:#202020;border:1px solid #3b3b3b;border-radius:6px;padding:5px}
 .richbar .tool{padding:5px 9px}
@@ -40,7 +40,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 <body>
 <div class="app">
 <header class="top">
-  <div class="logo">SiteBuilder <span>V3</span></div>
+  <div class="logo">SiteBuilder <span style="color:#ff8a00">V4</span></div>
   <button onclick="newSite()">New</button><button onclick="undo()">↶</button><button onclick="redo()">↷</button>
   <button onclick="saveSite()">Save</button><button onclick="loadSite()">Load</button>
   <button onclick="openExport()">Export</button>
@@ -59,6 +59,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
  <div class="el" draggable="true" data-type="divider">Divider</div>
  <div class="el" draggable="true" data-type="spacer">Spacer</div>
  <div class="el" draggable="true" data-type="html">HTML</div>
+ <div class="el" draggable="true" data-type="script">⚡ Script</div>
 </div>
 <h3>Quick sections</h3>
 <div class="palette">
@@ -66,7 +67,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
  <button class="el" onclick="addPreset('cards')">Cards</button>
  <button class="el" onclick="addPreset('about')">About</button>
 </div>
-<div class="status">V3: highlight text to format or link it. Drag elements to reorder them. Double-click text to edit directly.</div>
+<div class="status">V4: accurate preview sizing + JavaScript blocks. 900px desktop / 390px mobile.</div>
 </aside>
 
 <main class="stage-wrap" id="wrap">
@@ -97,7 +98,7 @@ const defaults={
  image:{html:'<img src="https://placehold.co/800x300?text=Your+Image" alt="Image">' },
  container:{html:'<div class="inner-container"><p>Container content</p></div>'},
  columns:{html:'<div class="cols"><div><h3>Column 1</h3><p>Content</p></div><div><h3>Column 2</h3><p>Content</p></div></div>'},
- divider:{html:'<hr>'},spacer:{html:'<div style="height:70px"></div>'},html:{html:'<div><b>Custom HTML</b></div>'}
+ divider:{html:'<hr>'},spacer:{html:'<div style="height:70px"></div>'},html:{html:'<div><b>Custom HTML</b></div>'},script:{html:'<div style="padding:10px;border:1px dashed #ff8a00;background:#fff7ed;color:#9a3412">⚡ JavaScript block — select me to edit</div>'}
 };
 
 document.querySelectorAll('.el[draggable]').forEach(x=>{
@@ -110,6 +111,7 @@ function addElement(type,html=null){
  pushHistory(); const el=document.createElement('div'); el.className='element'; el.dataset.type=type;
  el.draggable=true;
  el.innerHTML=html||defaults[type].html;
+ if(type==='script') el.dataset.script='// Write JavaScript here\n';
  el.onclick=e=>{e.stopPropagation();select(el)};
  el.addEventListener('dragstart',e=>{
    if(e.target===el || !e.target.closest('.richtext')){
@@ -143,12 +145,17 @@ function addElement(type,html=null){
 function dropElement(e){e.preventDefault();if(draggingType)addElement(draggingType);draggingType=null}
 function stageClick(){select(null)}
 function select(el){selected=el;document.querySelectorAll('.element').forEach(x=>x.classList.toggle('selected',x===el));buildInspector()}
+function saveElementScript(){if(!selected)return;selected.dataset.script=document.getElementById('scriptCode').value;toast('Script saved!')}
 function editText(el){
  const target=el.querySelector('h1,h2,h3,h4,p,span');
  if(!target)return; const v=prompt('Edit text:',target.innerText);if(v!==null){pushHistory();target.innerText=v;buildInspector()}
 }
 function buildInspector(){
- const box=document.getElementById('inspector'); if(!selected){box.innerHTML='<div style="color:#888;font-size:13px">Select an element.</div>';return}
+ const box=document.getElementById('inspector');
+ if(selected && selected.dataset.script!==undefined){
+   box.innerHTML='<h3>⚡ Script</h3><div class="field"><label>JavaScript</label><textarea id="scriptCode" style="min-height:300px;font-family:monospace"></textarea></div><button class="tool" onclick="saveElementScript()">Save Script</button><div class="status">Runs only on the exported website.</div>';
+   document.getElementById('scriptCode').value=selected.dataset.script||''; return;
+ } if(!selected){box.innerHTML='<div style="color:#888;font-size:13px">Select an element.</div>';return}
  const cs=getComputedStyle(selected), inner=selected.innerHTML.replaceAll('"','&quot;');
  box.innerHTML=`
  <div class="tabs"><button class="active">Style</button><button onclick="editRaw()">HTML</button></div>
@@ -383,9 +390,10 @@ function loadSite(){const x=localStorage.getItem('sitebuilder-v2');if(x!==null){
 function newSite(){if(confirm('Start a new site?')){pushHistory();stage.innerHTML='';selected=null;render()}}
 function togglePreview(){preview=!preview;document.querySelector('.sidebar').style.display=preview?'none':'';document.querySelector('.props').style.display=preview?'none':'';document.querySelector('.top').style.gridColumn=preview?'1/4':'';document.querySelector('.stage-wrap').style.gridColumn=preview?'1/4':''}
 function cleanExport(){
- const clone=stage.cloneNode(true);clone.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'));
- return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#111}.element{position:relative;min-height:10px;margin:6px 0;padding:5px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}a{color:#2563eb}img{max-width:100%}@media(max-width:600px){.cols{grid-template-columns:1fr}}</style></head><body>${clone.innerHTML}</body></html>`
+ const clone=stage.cloneNode(true);
+ clone.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'));
+ clone.querySelectorAll('[data-script]').forEach(x=>{const sc=document.createElement('script');sc.textContent=x.dataset.script||'';x.replaceWith(sc)});
+ return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><style>*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:Arial,sans-serif;color:#111;background:#fff}.site-page{width:900px;min-height:650px;margin:0 auto;padding:28px;box-sizing:border-box}.element{position:relative;min-height:10px;margin:6px 0;padding:5px;box-sizing:border-box;max-width:100%}.element img{max-width:100%;height:auto;display:block}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}a{color:#2563eb}@media(max-width:900px){.site-page{width:100%;margin:0}}@media(max-width:600px){.site-page{width:390px;max-width:100%;margin:0 auto}.cols{grid-template-columns:1fr}}</style></head><body><div class="site-page">${clone.innerHTML}</div></body></html>`;
 }
 function openExport(){document.getElementById('exportText').value=cleanExport();document.getElementById('modal').classList.add('show')}
 function closeExport(){document.getElementById('modal').classList.remove('show')}
