@@ -1,0 +1,514 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Content Editor</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1117;
+      color: #fff;
+    }
+
+    header {
+      padding: 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: #8b949e;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      padding: 15px;
+      height: calc(100vh - 91px);
+    }
+
+    .panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 10px;
+      background: #21262d;
+      border-bottom: 1px solid #30363d;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    .toolbar button,
+    .toolbar select {
+      background: #30363d;
+      color: white;
+      border: 1px solid #484f58;
+      border-radius: 6px;
+      padding: 7px 9px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover,
+    .toolbar select:hover {
+      background: #3b434d;
+    }
+
+    .toolbar .active {
+      background: #238636;
+    }
+
+    .editor {
+      flex: 1;
+      padding: 25px;
+      overflow-y: auto;
+      outline: none;
+      background: white;
+      color: #111;
+      line-height: 1.6;
+      font-size: 17px;
+    }
+
+    .editor:empty::before {
+      content: "Start typing here...";
+      color: #888;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: #21262d;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .output-header strong {
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 7px;
+    }
+
+    .action-btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 12px;
+      cursor: pointer;
+      color: white;
+      background: #238636;
+    }
+
+    .action-btn:hover {
+      background: #2ea043;
+    }
+
+    .clear-btn {
+      background: #da3633;
+    }
+
+    .clear-btn:hover {
+      background: #f85149;
+    }
+
+    #htmlOutput {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      border: 0;
+      outline: none;
+      padding: 20px;
+      background: #0d1117;
+      color: #79c0ff;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status {
+      padding: 8px 15px;
+      background: #161b22;
+      border-top: 1px solid #30363d;
+      color: #8b949e;
+      font-size: 12px;
+    }
+
+    .color-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #textColor {
+      width: 35px;
+      height: 35px;
+      padding: 2px;
+      border: 1px solid #484f58;
+      border-radius: 6px;
+      background: #30363d;
+      cursor: pointer;
+    }
+
+    @media (max-width: 800px) {
+      .app {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .panel {
+        min-height: 500px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>✨ HTML Content Editor</h1>
+  <p>Write and format your content, then generate HTML for your website.</p>
+</header>
+
+<div class="app">
+
+  <!-- EDITOR -->
+  <section class="panel">
+
+    <div class="toolbar">
+
+      <button onclick="format('bold')" title="Bold">
+        <b>B</b>
+      </button>
+
+      <button onclick="format('italic')" title="Italic">
+        <i>I</i>
+      </button>
+
+      <button onclick="format('underline')" title="Underline">
+        <u>U</u>
+      </button>
+
+      <button onclick="format('strikeThrough')" title="Strikethrough">
+        <s>S</s>
+      </button>
+
+      <select onchange="format('formatBlock', this.value); this.value='p'">
+        <option value="p">Paragraph</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="h4">Heading 4</option>
+        <option value="blockquote">Quote</option>
+      </select>
+
+      <button onclick="format('justifyLeft')" title="Align left">
+        ⬅
+      </button>
+
+      <button onclick="format('justifyCenter')" title="Center">
+        ↔
+      </button>
+
+      <button onclick="format('justifyRight')" title="Align right">
+        ➡
+      </button>
+
+      <button onclick="format('insertUnorderedList')" title="Bullet list">
+        • List
+      </button>
+
+      <button onclick="format('insertOrderedList')" title="Numbered list">
+        1. List
+      </button>
+
+      <button onclick="addLink()" title="Add link">
+        🔗 Link
+      </button>
+
+      <button onclick="addImage()" title="Add image">
+        🖼️ Image
+      </button>
+
+      <div class="color-wrapper">
+        <input
+          type="color"
+          id="textColor"
+          value="#000000"
+          title="Text color"
+          onchange="format('foreColor', this.value)"
+        >
+      </div>
+
+      <button onclick="format('removeFormat')" title="Remove formatting">
+        ✖ Clear format
+      </button>
+
+    </div>
+
+    <div
+      id="editor"
+      class="editor"
+      contenteditable="true"
+      spellcheck="true"
+    ></div>
+
+    <div class="status">
+      <span id="wordCount">0 words</span>
+      &nbsp;•&nbsp;
+      <span id="charCount">0 characters</span>
+    </div>
+
+  </section>
+
+
+  <!-- OUTPUT -->
+  <section class="panel">
+
+    <div class="output-header">
+
+      <strong>Generated HTML</strong>
+
+      <div class="actions">
+        <button class="action-btn" onclick="generateHTML()">
+          ⚡ Generate
+        </button>
+
+        <button class="action-btn" onclick="copyHTML()">
+          📋 Copy
+        </button>
+
+        <button class="action-btn clear-btn" onclick="clearAll()">
+          🗑 Clear
+        </button>
+      </div>
+
+    </div>
+
+    <textarea
+      id="htmlOutput"
+      spellcheck="false"
+      placeholder="Your HTML will appear here..."
+    ></textarea>
+
+  </section>
+
+</div>
+
+
+<script>
+
+  const editor = document.getElementById("editor");
+  const output = document.getElementById("htmlOutput");
+
+  function format(command, value = null) {
+    editor.focus();
+    document.execCommand(command, false, value);
+    updateStats();
+  }
+
+
+  function addLink() {
+
+    editor.focus();
+
+    const url = prompt("Enter the URL:");
+
+    if (!url) return;
+
+    document.execCommand(
+      "createLink",
+      false,
+      url
+    );
+
+  }
+
+
+  function addImage() {
+
+    editor.focus();
+
+    const url = prompt("Enter the image URL:");
+
+    if (!url) return;
+
+    document.execCommand(
+      "insertImage",
+      false,
+      url
+    );
+
+  }
+
+
+  function generateHTML() {
+
+    let html = editor.innerHTML.trim();
+
+    if (!html) {
+      output.value = "";
+      return;
+    }
+
+    /*
+      Clean up some browser-generated HTML.
+    */
+
+    html = html
+      .replace(/ style="[^"]*"/gi, match => {
+
+        /*
+          Keep useful inline styles such as colors/alignment.
+          This prevents the editor from removing formatting.
+        */
+
+        return match;
+
+      })
+      .replace(/<div>/gi, "<p>")
+      .replace(/<\/div>/gi, "</p>");
+
+    output.value = html;
+
+  }
+
+
+  async function copyHTML() {
+
+    if (!output.value.trim()) {
+      generateHTML();
+    }
+
+    try {
+
+      await navigator.clipboard.writeText(output.value);
+
+      const oldText = document.activeElement?.innerText;
+
+      alert("HTML copied to clipboard! ✅");
+
+    } catch (error) {
+
+      output.select();
+      document.execCommand("copy");
+
+      alert("HTML copied! ✅");
+
+    }
+
+  }
+
+
+  function clearAll() {
+
+    if (!confirm("Clear everything?")) return;
+
+    editor.innerHTML = "";
+    output.value = "";
+
+    updateStats();
+
+  }
+
+
+  function updateStats() {
+
+    const text = editor.innerText.trim();
+
+    const words = text
+      ? text.split(/\s+/).length
+      : 0;
+
+    const characters = text.length;
+
+    document.getElementById("wordCount").textContent =
+      words + (words === 1 ? " word" : " words");
+
+    document.getElementById("charCount").textContent =
+      characters + (characters === 1 ? " character" : " characters");
+
+  }
+
+
+  editor.addEventListener("input", updateStats);
+
+  editor.addEventListener("keyup", updateStats);
+
+  editor.addEventListener("paste", () => {
+
+    setTimeout(updateStats, 10);
+
+  });
+
+
+  /*
+    Keyboard shortcuts
+  */
+
+  editor.addEventListener("keydown", function(event) {
+
+    if (event.ctrlKey || event.metaKey) {
+
+      if (event.key.toLowerCase() === "b") {
+
+        event.preventDefault();
+        format("bold");
+
+      }
+
+      if (event.key.toLowerCase() === "i") {
+
+        event.preventDefault();
+        format("italic");
+
+      }
+
+      if (event.key.toLowerCase() === "u") {
+
+        event.preventDefault();
+        format("underline");
+
+      }
+
+    }
+
+  });
+
+
+  updateStats();
+
+</script>
+
+</body>
+</html>
+```
