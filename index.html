@@ -1,514 +1,327 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Content Editor</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f1117;
-      color: #fff;
-    }
-
-    header {
-      padding: 20px;
-      background: #161b22;
-      border-bottom: 1px solid #30363d;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-
-    header p {
-      margin: 6px 0 0;
-      color: #8b949e;
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      padding: 15px;
-      height: calc(100vh - 91px);
-    }
-
-    .panel {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      padding: 10px;
-      background: #21262d;
-      border-bottom: 1px solid #30363d;
-    }
-
-    button,
-    select,
-    input {
-      font: inherit;
-    }
-
-    .toolbar button,
-    .toolbar select {
-      background: #30363d;
-      color: white;
-      border: 1px solid #484f58;
-      border-radius: 6px;
-      padding: 7px 9px;
-      cursor: pointer;
-    }
-
-    .toolbar button:hover,
-    .toolbar select:hover {
-      background: #3b434d;
-    }
-
-    .toolbar .active {
-      background: #238636;
-    }
-
-    .editor {
-      flex: 1;
-      padding: 25px;
-      overflow-y: auto;
-      outline: none;
-      background: white;
-      color: #111;
-      line-height: 1.6;
-      font-size: 17px;
-    }
-
-    .editor:empty::before {
-      content: "Start typing here...";
-      color: #888;
-    }
-
-    .output-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      background: #21262d;
-      border-bottom: 1px solid #30363d;
-    }
-
-    .output-header strong {
-      font-size: 14px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 7px;
-    }
-
-    .action-btn {
-      border: 0;
-      border-radius: 6px;
-      padding: 7px 12px;
-      cursor: pointer;
-      color: white;
-      background: #238636;
-    }
-
-    .action-btn:hover {
-      background: #2ea043;
-    }
-
-    .clear-btn {
-      background: #da3633;
-    }
-
-    .clear-btn:hover {
-      background: #f85149;
-    }
-
-    #htmlOutput {
-      flex: 1;
-      width: 100%;
-      resize: none;
-      border: 0;
-      outline: none;
-      padding: 20px;
-      background: #0d1117;
-      color: #79c0ff;
-      font-family: Consolas, Monaco, monospace;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .status {
-      padding: 8px 15px;
-      background: #161b22;
-      border-top: 1px solid #30363d;
-      color: #8b949e;
-      font-size: 12px;
-    }
-
-    .color-wrapper {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-    }
-
-    #textColor {
-      width: 35px;
-      height: 35px;
-      padding: 2px;
-      border: 1px solid #484f58;
-      border-radius: 6px;
-      background: #30363d;
-      cursor: pointer;
-    }
-
-    @media (max-width: 800px) {
-      .app {
-        grid-template-columns: 1fr;
-        height: auto;
-      }
-
-      .panel {
-        min-height: 500px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Builder V1</title>
+<style>
+  :root{
+    --bg:#0b0f14;--panel:#111821;--panel2:#18212c;--line:#2a3644;
+    --text:#e8eef5;--muted:#8b98a8;--accent:#4f8cff;--danger:#ff5c6c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  button,input,select,textarea{font:inherit}
+  button{cursor:pointer}
+  .app{height:100vh;display:grid;grid-template-rows:58px 1fr;overflow:hidden}
+  header{display:flex;align-items:center;gap:18px;padding:0 16px;background:#0d131a;border-bottom:1px solid var(--line)}
+  .logo{font-weight:800;font-size:17px;white-space:nowrap}.logo span{color:var(--accent)}
+  .top-actions{display:flex;gap:8px;margin-left:auto}
+  .btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:8px 12px;border-radius:7px}
+  .btn:hover{filter:brightness(1.18)} .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.danger{background:#3a1820;border-color:#71303b;color:#ff9aa5}
+  .main{display:grid;grid-template-columns:235px 1fr 285px;min-height:0}
+  aside{background:var(--panel);min-height:0;overflow:auto}
+  .left{border-right:1px solid var(--line)} .right{border-left:1px solid var(--line)}
+  .section{padding:14px;border-bottom:1px solid var(--line)}
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800;margin-bottom:10px}
+  .elements{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .element{background:#17212c;border:1px solid var(--line);border-radius:8px;padding:11px 8px;text-align:center;color:var(--text)}
+  .element:hover{border-color:var(--accent);background:#1b2a3c}
+  .element .ico{font-size:20px;display:block;margin-bottom:4px}
+  .element small{font-size:11px}
+  .hint{font-size:12px;line-height:1.55;color:var(--muted)}
+  .workspace{min-width:0;display:flex;flex-direction:column;background:#080c11}
+  .workspacebar{height:45px;display:flex;align-items:center;justify-content:center;gap:8px;border-bottom:1px solid var(--line);background:#0d131a}
+  .device{padding:6px 10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:6px}
+  .device.active{color:#fff;border-color:var(--accent);background:#162642}
+  .stage-wrap{flex:1;overflow:auto;padding:28px;display:flex;justify-content:center;align-items:flex-start}
+  #stage{width:900px;min-height:620px;background:#fff;color:#111;position:relative;box-shadow:0 12px 45px #0008;transition:width .2s}
+  #stage.mobile{width:390px}.stage-empty{min-height:620px;display:flex;align-items:center;justify-content:center;color:#9aa4af;font-size:15px;text-align:center;padding:30px}
+  .site-el{position:relative;outline:1px solid transparent;cursor:pointer}
+  .site-el:hover{outline:1px dashed #4f8cff88}.site-el.selected{outline:2px solid var(--accent)!important}
+  .site-el.dragging{opacity:.45}
+  .drag-handle{position:absolute;left:-1px;top:-24px;background:var(--accent);color:white;font-size:11px;padding:3px 7px;border-radius:4px 4px 0 0;display:none;z-index:20}
+  .selected>.drag-handle{display:block}
+  .text-el{padding:12px 16px;min-height:25px}
+  .heading-el{padding:14px 16px}
+  .button-el{display:inline-block;margin:14px 16px;padding:11px 18px;border-radius:7px;background:#4f8cff;color:white;text-decoration:none}
+  .image-el{display:block;max-width:100%;height:auto}
+  .container-el{margin:10px;padding:22px;min-height:100px;border:1px dashed #aeb8c466;background:#f7f9fb}
+  .divider-el{border:0;border-top:2px solid #ddd;margin:20px 16px}
+  .spacer-el{height:60px}
+  .prop{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .prop label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
+  .prop input,.prop select,.prop textarea{width:100%;background:#0d141c;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px}
+  .prop textarea{min-height:70px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .color{height:36px;padding:3px!important}
+  .empty-props{padding:20px 14px;color:var(--muted);font-size:13px;line-height:1.5}
+  .mini-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .full{width:100%}
+  .status{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#18212c;border:1px solid var(--line);padding:8px 13px;border-radius:7px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:100}.status.show{opacity:1}
+  .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:200;padding:20px}.modal.open{display:flex}
+  .modal-box{width:min(900px,100%);height:min(700px,90vh);background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;border-bottom:1px solid var(--line)}
+  #exportCode{flex:1;background:#080c11;color:#b9e0ff;border:0;padding:18px;resize:none;font:13px/1.55 Consolas,monospace;outline:none}
+  @media(max-width:950px){.main{grid-template-columns:190px 1fr}.right{display:none}.stage-wrap{padding:15px}.stage-empty{min-height:500px}}
+  @media(max-width:650px){.main{grid-template-columns:1fr}.left{display:none}.workspacebar{justify-content:flex-start;padding-left:10px}.top-actions .optional{display:none}}
+</style>
 </head>
-
 <body>
-
+<div class="app">
 <header>
-  <h1>✨ HTML Content Editor</h1>
-  <p>Write and format your content, then generate HTML for your website.</p>
+  <div class="logo">🛠️ <span>Site</span> Builder <small style="color:#8b98a8">V1</small></div>
+  <div class="top-actions">
+    <button class="btn optional" onclick="saveProject()">💾 Save</button>
+    <button class="btn optional" onclick="loadProject()">↩ Load</button>
+    <button class="btn" onclick="undo()">↶</button>
+    <button class="btn" onclick="redo()">↷</button>
+    <button class="btn primary" onclick="openExport()">Export HTML</button>
+  </div>
 </header>
 
-<div class="app">
-
-  <!-- EDITOR -->
-  <section class="panel">
-
-    <div class="toolbar">
-
-      <button onclick="format('bold')" title="Bold">
-        <b>B</b>
-      </button>
-
-      <button onclick="format('italic')" title="Italic">
-        <i>I</i>
-      </button>
-
-      <button onclick="format('underline')" title="Underline">
-        <u>U</u>
-      </button>
-
-      <button onclick="format('strikeThrough')" title="Strikethrough">
-        <s>S</s>
-      </button>
-
-      <select onchange="format('formatBlock', this.value); this.value='p'">
-        <option value="p">Paragraph</option>
-        <option value="h1">Heading 1</option>
-        <option value="h2">Heading 2</option>
-        <option value="h3">Heading 3</option>
-        <option value="h4">Heading 4</option>
-        <option value="blockquote">Quote</option>
-      </select>
-
-      <button onclick="format('justifyLeft')" title="Align left">
-        ⬅
-      </button>
-
-      <button onclick="format('justifyCenter')" title="Center">
-        ↔
-      </button>
-
-      <button onclick="format('justifyRight')" title="Align right">
-        ➡
-      </button>
-
-      <button onclick="format('insertUnorderedList')" title="Bullet list">
-        • List
-      </button>
-
-      <button onclick="format('insertOrderedList')" title="Numbered list">
-        1. List
-      </button>
-
-      <button onclick="addLink()" title="Add link">
-        🔗 Link
-      </button>
-
-      <button onclick="addImage()" title="Add image">
-        🖼️ Image
-      </button>
-
-      <div class="color-wrapper">
-        <input
-          type="color"
-          id="textColor"
-          value="#000000"
-          title="Text color"
-          onchange="format('foreColor', this.value)"
-        >
-      </div>
-
-      <button onclick="format('removeFormat')" title="Remove formatting">
-        ✖ Clear format
-      </button>
-
+<div class="main">
+<aside class="left">
+  <div class="section">
+    <div class="section-title">Elements</div>
+    <div class="elements">
+      <button class="element" draggable="true" data-type="text"><span class="ico">T</span><small>Text</small></button>
+      <button class="element" draggable="true" data-type="heading"><span class="ico">H</span><small>Heading</small></button>
+      <button class="element" draggable="true" data-type="button"><span class="ico">🔘</span><small>Button</small></button>
+      <button class="element" draggable="true" data-type="image"><span class="ico">🖼️</span><small>Image</small></button>
+      <button class="element" draggable="true" data-type="container"><span class="ico">▣</span><small>Container</small></button>
+      <button class="element" draggable="true" data-type="divider"><span class="ico">➖</span><small>Divider</small></button>
+      <button class="element" draggable="true" data-type="spacer"><span class="ico">↕️</span><small>Spacer</small></button>
     </div>
-
-    <div
-      id="editor"
-      class="editor"
-      contenteditable="true"
-      spellcheck="true"
-    ></div>
-
-    <div class="status">
-      <span id="wordCount">0 words</span>
-      &nbsp;•&nbsp;
-      <span id="charCount">0 characters</span>
+  </div>
+  <div class="section">
+    <div class="section-title">Quick actions</div>
+    <button class="btn full" onclick="addElement('text')">＋ Add text</button><br><br>
+    <button class="btn full" onclick="addElement('container')">＋ Add container</button>
+  </div>
+  <div class="section">
+    <div class="section-title">How to use</div>
+    <div class="hint">
+      Drag an element onto the white page.<br><br>
+      Click an element to edit its properties on the right.<br><br>
+      Drag elements around the page to reorder them.<br><br>
+      Everything is saved in your browser when you click Save.
     </div>
+  </div>
+</aside>
 
-  </section>
-
-
-  <!-- OUTPUT -->
-  <section class="panel">
-
-    <div class="output-header">
-
-      <strong>Generated HTML</strong>
-
-      <div class="actions">
-        <button class="action-btn" onclick="generateHTML()">
-          ⚡ Generate
-        </button>
-
-        <button class="action-btn" onclick="copyHTML()">
-          📋 Copy
-        </button>
-
-        <button class="action-btn clear-btn" onclick="clearAll()">
-          🗑 Clear
-        </button>
-      </div>
-
+<section class="workspace">
+  <div class="workspacebar">
+    <button class="device active" id="desktopBtn" onclick="setDevice('desktop')">🖥 Desktop</button>
+    <button class="device" id="mobileBtn" onclick="setDevice('mobile')">📱 Mobile</button>
+    <button class="device" onclick="stage.style.background=prompt('Page background color:', getComputedStyle(stage).backgroundColor)||getComputedStyle(stage).backgroundColor">🎨 Page color</button>
+  </div>
+  <div class="stage-wrap">
+    <div id="stage" ondragover="allowDrop(event)" ondrop="dropOnStage(event)">
+      <div class="stage-empty" id="empty">Drag elements here to start building your website 🚀</div>
     </div>
+  </div>
+</section>
 
-    <textarea
-      id="htmlOutput"
-      spellcheck="false"
-      placeholder="Your HTML will appear here..."
-    ></textarea>
-
-  </section>
-
+<aside class="right">
+  <div class="section">
+    <div class="section-title">Properties</div>
+    <div id="properties" class="empty-props">Select an element on the page to customize it.</div>
+  </div>
+</aside>
+</div>
 </div>
 
+<div id="status" class="status"></div>
+
+<div id="exportModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <strong>Export your website</strong>
+      <div style="display:flex;gap:7px">
+        <button class="btn primary" onclick="copyExport()">📋 Copy</button>
+        <button class="btn" onclick="downloadExport()">⬇ Download</button>
+        <button class="btn" onclick="closeExport()">✕</button>
+      </div>
+    </div>
+    <textarea id="exportCode" spellcheck="false"></textarea>
+  </div>
+</div>
 
 <script>
+const stage=document.getElementById('stage'), props=document.getElementById('properties');
+let selected=null, dragType=null, history=[], future=[], restoring=false;
 
-  const editor = document.getElementById("editor");
-  const output = document.getElementById("htmlOutput");
+const defaults={
+ text:{html:'Double-click to edit this text.',style:{fontSize:'17px',color:'#111111',textAlign:'left',backgroundColor:'transparent'}},
+ heading:{html:'Your Awesome Heading',style:{fontSize:'36px',color:'#111111',textAlign:'left',fontWeight:'700',backgroundColor:'transparent'}},
+ button:{html:'Click me',href:'#',style:{fontSize:'16px',color:'#ffffff',backgroundColor:'#4f8cff',borderRadius:'7px',padding:'11px 18px'}},
+ image:{src:'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',alt:'Website image',style:{width:'100%',maxWidth:'100%',height:'auto'}},
+ container:{html:'Drop more elements here',style:{backgroundColor:'#f7f9fb',padding:'22px',minHeight:'120px'}},
+ divider:{style:{borderColor:'#dddddd',borderTopWidth:'2px'}},
+ spacer:{style:{height:'60px'}}
+};
 
-  function format(command, value = null) {
-    editor.focus();
-    document.execCommand(command, false, value);
-    updateStats();
-  }
+function snapshot(){return stage.innerHTML}
+function pushHistory(){
+  if(restoring)return;
+  history.push(snapshot()); if(history.length>50)history.shift(); future=[];
+}
+function restore(html){
+  restoring=true;stage.innerHTML=html;selected=null;props.innerHTML='<div class="empty-props">Select an element on the page to customize it.</div>';bindAll();updateEmpty();restoring=false;
+}
+function undo(){if(!history.length)return;future.push(snapshot());restore(history.pop())}
+function redo(){if(!future.length)return;history.push(snapshot());restore(future.pop())}
 
+function makeElement(type){
+  const d=defaults[type], el=document.createElement(type==='image'?'img':'div');
+  el.className='site-el '+type+'-el';
+  el.dataset.type=type; el.draggable=true;
+  if(type==='heading')el.innerHTML=d.html;
+  else if(type==='text'||type==='container')el.innerHTML=d.html;
+  else if(type==='button'){const a=document.createElement('a');a.href=d.href;a.textContent=d.html;a.className='button-el';a.style.cssText=styleText(d.style);el.className='site-el button-wrap';el.appendChild(a)}
+  else if(type==='image'){el.src=d.src;el.alt=d.alt;el.style.cssText=styleText(d.style)}
+  else if(type==='divider')el.style.cssText='border-top:'+d.style.borderTopWidth+' solid '+d.style.borderColor;
+  else if(type==='spacer')el.style.cssText=styleText(d.style);
+  if(type==='container')el.setAttribute('data-container','true');
+  return el;
+}
+function styleText(s){return Object.entries(s||{}).map(([k,v])=>k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+':'+v).join(';')}
 
-  function addLink() {
-
-    editor.focus();
-
-    const url = prompt("Enter the URL:");
-
-    if (!url) return;
-
-    document.execCommand(
-      "createLink",
-      false,
-      url
-    );
-
-  }
-
-
-  function addImage() {
-
-    editor.focus();
-
-    const url = prompt("Enter the image URL:");
-
-    if (!url) return;
-
-    document.execCommand(
-      "insertImage",
-      false,
-      url
-    );
-
-  }
-
-
-  function generateHTML() {
-
-    let html = editor.innerHTML.trim();
-
-    if (!html) {
-      output.value = "";
-      return;
+function addElement(type,before=null){
+  pushHistory(); const el=makeElement(type);
+  if(before)stage.insertBefore(el,before); else stage.appendChild(el);
+  select(el); updateEmpty();
+}
+function allowDrop(e){e.preventDefault()}
+document.querySelectorAll('.element').forEach(b=>{
+  b.addEventListener('dragstart',e=>{dragType=b.dataset.type;e.dataTransfer.setData('text/plain',dragType)})
+});
+function dropOnStage(e){
+  e.preventDefault(); const type=e.dataTransfer.getData('text/plain')||dragType;
+  if(type)addElement(type);
+}
+function bindAll(){
+  stage.querySelectorAll('.site-el').forEach(el=>{
+    el.addEventListener('click',e=>{e.stopPropagation();select(el)});
+    el.addEventListener('dragstart',e=>{e.stopPropagation();el.classList.add('dragging');e.dataTransfer.setData('move-id','move')});
+    el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+    el.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation()});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();
+      const moving=stage.querySelector('.dragging');
+      if(moving&&moving!==el){pushHistory();el.parentNode.insertBefore(moving,el);select(moving)}
+      else if(dragType){addElement(dragType,el)}
+    });
+    if(el.dataset.type==='text'||el.dataset.type==='heading'||el.dataset.type==='container'){
+      el.addEventListener('dblclick',()=>{el.contentEditable='true';el.focus()});
+      el.addEventListener('blur',()=>{el.contentEditable='false';pushHistory()});
     }
-
-    /*
-      Clean up some browser-generated HTML.
-    */
-
-    html = html
-      .replace(/ style="[^"]*"/gi, match => {
-
-        /*
-          Keep useful inline styles such as colors/alignment.
-          This prevents the editor from removing formatting.
-        */
-
-        return match;
-
-      })
-      .replace(/<div>/gi, "<p>")
-      .replace(/<\/div>/gi, "</p>");
-
-    output.value = html;
-
-  }
-
-
-  async function copyHTML() {
-
-    if (!output.value.trim()) {
-      generateHTML();
-    }
-
-    try {
-
-      await navigator.clipboard.writeText(output.value);
-
-      const oldText = document.activeElement?.innerText;
-
-      alert("HTML copied to clipboard! ✅");
-
-    } catch (error) {
-
-      output.select();
-      document.execCommand("copy");
-
-      alert("HTML copied! ✅");
-
-    }
-
-  }
-
-
-  function clearAll() {
-
-    if (!confirm("Clear everything?")) return;
-
-    editor.innerHTML = "";
-    output.value = "";
-
-    updateStats();
-
-  }
-
-
-  function updateStats() {
-
-    const text = editor.innerText.trim();
-
-    const words = text
-      ? text.split(/\s+/).length
-      : 0;
-
-    const characters = text.length;
-
-    document.getElementById("wordCount").textContent =
-      words + (words === 1 ? " word" : " words");
-
-    document.getElementById("charCount").textContent =
-      characters + (characters === 1 ? " character" : " characters");
-
-  }
-
-
-  editor.addEventListener("input", updateStats);
-
-  editor.addEventListener("keyup", updateStats);
-
-  editor.addEventListener("paste", () => {
-
-    setTimeout(updateStats, 10);
-
   });
+}
+stage.addEventListener('click',e=>{if(e.target===stage){selected=null;props.innerHTML='<div class="empty-props">Select an element on the page to customize it.</div>'}});
+function updateEmpty(){document.getElementById('empty')?.remove();if(!stage.querySelector('.site-el')){const x=document.createElement('div');x.id='empty';x.className='stage-empty';x.textContent='Drag elements here to start building your website 🚀';stage.appendChild(x)}}
 
+function select(el){selected=el;renderProps()}
+function input(label,key,value,type='text',oninput=null){
+  const wrap=document.createElement('div');wrap.className='prop';const l=document.createElement('label');l.textContent=label;wrap.appendChild(l);
+  const i=document.createElement(type==='textarea'?'textarea':'input');i.value=value??'';if(type==='color')i.type='color';
+  if(type==='textarea')i.rows=3;
+  i.oninput=()=>{if(oninput)oninput(i.value);else setProp(key,i.value)};wrap.appendChild(i);return wrap;
+}
+function setProp(key,value){
+  if(!selected)return;pushHistory();
+  if(key==='text'){if(selected.dataset.type==='button')selected.querySelector('a').textContent=value;else selected.textContent=value}
+  else if(key==='src'){selected.src=value}
+  else if(key==='href'){selected.querySelector('a').href=value}
+  else if(key==='alt'){selected.alt=value}
+  else selected.style[key]=value;
+  renderProps(false);
+}
+function renderProps(rebuild=true){
+  if(!selected){props.innerHTML='<div class="empty-props">Select an element on the page to customize it.</div>';return}
+  if(!rebuild)return;
+  props.innerHTML='';
+  const type=selected.dataset.type;
+  const content=type==='button'?selected.querySelector('a')?.textContent:(type==='image'?'':selected.textContent);
+  if(type!=='divider'&&type!=='spacer')props.appendChild(input('Content','text',content,'textarea'));
+  if(type==='image'){
+    props.appendChild(input('Image URL','src',selected.src));
+    props.appendChild(input('Alt text','alt',selected.alt));
+  }
+  if(type==='button')props.appendChild(input('Link URL','href',selected.querySelector('a').getAttribute('href')||'#'));
+  props.appendChild(input('Text color','color',rgbToHex(getComputedStyle(selected).color),'color'));
+  props.appendChild(input('Background','backgroundColor',rgbToHex(getComputedStyle(selected).backgroundColor),'color'));
+  props.appendChild(input('Font size','fontSize',px(getComputedStyle(selected).fontSize)));
+  if(type!=='image'&&type!=='divider'&&type!=='spacer')props.appendChild(input('Padding','padding',getComputedStyle(selected).padding));
+  props.appendChild(input('Margin','margin',getComputedStyle(selected).margin));
+  props.appendChild(input('Border radius','borderRadius',getComputedStyle(selected).borderRadius));
+  props.appendChild(input('Width','width',getComputedStyle(selected).width));
+  if(type!=='image'&&type!=='divider'&&type!=='spacer'){
+    const row=document.createElement('div');row.className='prop';row.innerHTML='<label>Text alignment</label>';
+    const s=document.createElement('select');['left','center','right'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;o.selected=getComputedStyle(selected).textAlign===v;s.appendChild(o)});s.onchange=()=>setProp('textAlign',s.value);row.appendChild(s);props.appendChild(row);
+  }
+  const actions=document.createElement('div');actions.className='prop mini-actions';
+  const dup=document.createElement('button');dup.className='btn';dup.textContent='Duplicate';dup.onclick=()=>{pushHistory();const c=selected.cloneNode(true);c.classList.remove('selected');selected.after(c);bindAll();select(c)};
+  const del=document.createElement('button');del.className='btn danger';del.textContent='Delete';del.onclick=()=>{pushHistory();selected.remove();selected=null;renderProps();updateEmpty()};
+  actions.append(dup,del);props.appendChild(actions);
+}
+function px(v){return v.replace('px','')}
+function rgbToHex(v){
+  if(!v||v==='transparent')return '#000000';
+  const m=v.match(/\d+/g);if(!m)return '#000000';
+  return '#'+m.slice(0,3).map(x=>Number(x).toString(16).padStart(2,'0')).join('');
+}
+function setDevice(d){
+  stage.classList.toggle('mobile',d==='mobile');
+  desktopBtn.classList.toggle('active',d==='desktop');mobileBtn.classList.toggle('active',d==='mobile');
+}
+function saveProject(){localStorage.setItem('site-builder-v1',stage.innerHTML);toast('Project saved in this browser 💾')}
+function loadProject(){const x=localStorage.getItem('site-builder-v1');if(!x){toast('No saved project yet');return}pushHistory();restore(x);toast('Project loaded')}
+function toast(msg){const s=document.getElementById('status');s.textContent=msg;s.classList.add('show');setTimeout(()=>s.classList.remove('show'),1800)}
 
-  /*
-    Keyboard shortcuts
-  */
-
-  editor.addEventListener("keydown", function(event) {
-
-    if (event.ctrlKey || event.metaKey) {
-
-      if (event.key.toLowerCase() === "b") {
-
-        event.preventDefault();
-        format("bold");
-
-      }
-
-      if (event.key.toLowerCase() === "i") {
-
-        event.preventDefault();
-        format("italic");
-
-      }
-
-      if (event.key.toLowerCase() === "u") {
-
-        event.preventDefault();
-        format("underline");
-
-      }
-
-    }
-
+function cleanForExport(){
+  const clone=stage.cloneNode(true);
+  clone.querySelectorAll('.site-el').forEach(el=>{
+    el.classList.remove('site-el','selected','dragging');
+    el.removeAttribute('draggable');el.removeAttribute('data-type');el.removeAttribute('data-container');
   });
-
-
-  updateStats();
-
+  clone.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));
+  return clone.innerHTML.trim();
+}
+function openExport(){
+  document.getElementById('exportCode').value=`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Website</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif}
+img{max-width:100%;height:auto}
+a{text-decoration:none}
+</style>
+</head>
+<body>
+${cleanForExport()}
+</body>
+</html>`;
+  document.getElementById('exportModal').classList.add('open');
+}
+function closeExport(){document.getElementById('exportModal').classList.remove('open')}
+async function copyExport(){const t=document.getElementById('exportCode');await navigator.clipboard.writeText(t.value);toast('HTML copied 📋')}
+function downloadExport(){
+  const blob=new Blob([document.getElementById('exportCode').value],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='index.html';a.click();URL.revokeObjectURL(a.href);
+}
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}
+  if(e.key==='Delete'&&selected&&!selected.matches(':focus')){pushHistory();selected.remove();selected=null;renderProps();updateEmpty()}
+});
+bindAll();updateEmpty();
 </script>
-
 </body>
 </html>
-```
