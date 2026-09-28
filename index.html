@@ -130,14 +130,14 @@ function buildInspector(){
  </div>
  <div class="field"><label>Text / Content</label>
   <div class="richbar">
-   <button type="button" class="tool" onclick="richCmd('bold')"><b>B</b></button>
-   <button type="button" class="tool" onclick="richCmd('italic')"><i>I</i></button>
-   <button type="button" class="tool" onclick="richCmd('underline')"><u>U</u></button>
-   <button type="button" class="tool" onclick="richCmd('strikeThrough')"><s>S</s></button>
-   <button type="button" class="tool" onclick="richCmd('justifyLeft')">≡</button>
-   <button type="button" class="tool" onclick="richCmd('justifyCenter')">☰</button>
-   <button type="button" class="tool" onclick="richCmd('justifyRight')">≡</button>
-   <input id="richColor" type="color" title="Text color" value="${rgbHex(cs.color)}" onchange="richColor(this.value)">
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('bold')"><b>B</b></button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('italic')"><i>I</i></button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('underline')"><u>U</u></button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('strikeThrough')"><s>S</s></button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyLeft')">≡</button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyCenter')">☰</button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyRight')">≡</button>
+   <input id="richColor" type="color" title="Text color" value="${rgbHex(cs.color)}" onmousedown="saveRichSelection(event)" onchange="richColor(this.value)">
   </div>
   <div id="pcontent" class="richtext" contenteditable="true">${selected.innerHTML}</div>
  </div>
@@ -195,23 +195,57 @@ function buildInspector(){
    if(!selected)return;
    selected.innerHTML=document.getElementById('pcontent').innerHTML;
  };
- document.getElementById('pcontent').onblur=()=>{if(selected){pushHistory();buildInspector()}}
+ document.getElementById('pcontent').onmouseup=()=>saveRichSelection();
+ document.getElementById('pcontent').onkeyup=()=>saveRichSelection();
+ document.getElementById('pcontent').onblur=()=>{if(selected){richSelection=null;pushHistory()}}
 }
+let richSelection=null;
+
+function saveRichSelection(e){
+ if(e)e.preventDefault();
+ const editor=document.getElementById('pcontent');
+ if(!editor)return;
+ const sel=window.getSelection();
+ if(!sel || !sel.rangeCount)return;
+ const range=sel.getRangeAt(0);
+ if(editor.contains(range.commonAncestorContainer)){
+   richSelection=range.cloneRange();
+ }
+}
+function restoreRichSelection(){
+ const editor=document.getElementById('pcontent');
+ if(!editor || !richSelection)return false;
+ try{
+   const sel=window.getSelection();
+   sel.removeAllRanges();
+   sel.addRange(richSelection);
+   editor.focus({preventScroll:true});
+   return true;
+ }catch(e){return false}
+}
+
 function richCmd(command){
  const editor=document.getElementById('pcontent');
  if(!editor)return;
- editor.focus();
+ restoreRichSelection();
  document.execCommand(command,false,null);
+ richSelection=null;
  if(selected){
    selected.innerHTML=editor.innerHTML;
+   // Keep the editor open instead of rebuilding the inspector and destroying the selection.
+   editor.focus({preventScroll:true});
  }
 }
 function richColor(color){
  const editor=document.getElementById('pcontent');
  if(!editor)return;
- editor.focus();
+ restoreRichSelection();
  document.execCommand('foreColor',false,color);
- if(selected)selected.innerHTML=editor.innerHTML;
+ richSelection=null;
+ if(selected){
+   selected.innerHTML=editor.innerHTML;
+   editor.focus({preventScroll:true});
+ }
 }
 function toggleFormat(prop,on,off){
  if(!selected)return;
