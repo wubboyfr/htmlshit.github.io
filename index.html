@@ -19,6 +19,12 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 .stage.mobile{width:390px;min-height:700px}.stage.empty:after{content:"Drop elements here";position:absolute;inset:30px;border:2px dashed #bbb;display:grid;place-items:center;color:#aaa;font-size:20px;pointer-events:none}
 .element{position:relative;min-height:10px;margin:6px 0;padding:5px;outline:1px solid transparent}.element:hover{outline:1px dashed #8b72ff}.element.selected{outline:2px solid #7c5cff}.element img{max-width:100%;display:block}.element button{border:0}
 .row{display:flex;gap:7px}.field{margin-bottom:12px}.field label{display:block;font-size:11px;color:#aaa;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:8px}.field textarea{min-height:75px;resize:vertical}
+.richbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;background:#202020;border:1px solid #3b3b3b;border-radius:6px;padding:5px}
+.richbar .tool{padding:5px 9px}
+.richbar input[type=color]{width:32px;height:30px;padding:2px;background:#222;border:1px solid #444;border-radius:5px}
+.richtext{min-height:95px;max-height:220px;overflow:auto;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:9px;outline:none}
+.richtext:focus{border-color:#7c5cff}
+
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}.danger{background:#3a1717!important;border-color:#662828!important;color:#ff9b9b!important}
 .tabs{display:flex;gap:5px;margin-bottom:12px}.tabs button{flex:1;background:#222;color:#aaa;border:1px solid #333;padding:7px;border-radius:6px}.tabs button.active{color:white;background:#352d55}
 .status{font-size:11px;color:#888;margin-top:12px}.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:20}.modal.show{display:flex}.modalbox{width:min(850px,90vw);height:min(75vh,700px);background:#181818;border:1px solid #444;border-radius:12px;padding:15px;display:flex;flex-direction:column;gap:10px}.modalbox textarea{flex:1;background:#0d0d0d;color:#ddd;border:1px solid #333;border-radius:8px;padding:12px;font-family:monospace;font-size:12px}
@@ -114,7 +120,27 @@ function buildInspector(){
  box.innerHTML=`
  <div class="tabs"><button class="active">Style</button><button onclick="editRaw()">HTML</button></div>
  <div class="field"><label>Element</label><input value="${selected.dataset.type}" disabled></div>
- <div class="field"><label>Text / Content</label><textarea id="pcontent">${selected.innerText}</textarea></div>
+ <div class="field"><label>Text formatting</label>
+  <div class="row">
+   <button type="button" class="tool" id="boldBtn"><b>B</b></button>
+   <button type="button" class="tool" id="italicBtn"><i>I</i></button>
+   <button type="button" class="tool" id="underlineBtn"><u>U</u></button>
+   <button type="button" class="tool" id="strikeBtn"><s>S</s></button>
+  </div>
+ </div>
+ <div class="field"><label>Text / Content</label>
+  <div class="richbar">
+   <button type="button" class="tool" onclick="richCmd('bold')"><b>B</b></button>
+   <button type="button" class="tool" onclick="richCmd('italic')"><i>I</i></button>
+   <button type="button" class="tool" onclick="richCmd('underline')"><u>U</u></button>
+   <button type="button" class="tool" onclick="richCmd('strikeThrough')"><s>S</s></button>
+   <button type="button" class="tool" onclick="richCmd('justifyLeft')">≡</button>
+   <button type="button" class="tool" onclick="richCmd('justifyCenter')">☰</button>
+   <button type="button" class="tool" onclick="richCmd('justifyRight')">≡</button>
+   <input id="richColor" type="color" title="Text color" value="${rgbHex(cs.color)}" onchange="richColor(this.value)">
+  </div>
+  <div id="pcontent" class="richtext" contenteditable="true">${selected.innerHTML}</div>
+ </div>
  <div class="field"><label>Text color</label><input type="color" id="color" value="${rgbHex(cs.color)}"></div>
  <div class="field"><label>Background</label><input type="color" id="bg" value="${rgbHex(cs.backgroundColor)}"></div>
  <div class="grid2">
@@ -137,6 +163,10 @@ function buildInspector(){
   </select>
  </div>
  <div class="grid2">
+  <div class="field"><label>Line height</label><input id="lh" value="${cs.lineHeight==='normal'?'normal':cs.lineHeight}"></div>
+  <div class="field"><label>Letter spacing</label><input id="ls" value="${cs.letterSpacing}"></div>
+ </div>
+ <div class="grid2">
   <div class="field"><label>Padding</label><input id="pad" value="${cs.padding}"></div>
   <div class="field"><label>Margin</label><input id="mar" value="${cs.margin}"></div>
  </div>
@@ -145,7 +175,7 @@ function buildInspector(){
  ${selected.dataset.type==='image'?'<div class="field"><label>Image URL</label><input id="imgurl" value="'+(selected.querySelector('img')?.src||'')+'"></div>':''}
  ${selected.dataset.type==='button'?'<div class="field"><label>Button link</label><input id="link" value="'+(selected.querySelector('a')?.href||'#')+'"></div>':''}
  <div class="row"><button class="tool" onclick="duplicate()">Duplicate</button><button class="tool danger" onclick="removeSelected()">Delete</button></div>`;
- ['color','bg','fs','rad','font','pad','mar','width','align','imgurl','link'].forEach(id=>{
+ ['color','bg','fs','rad','font','lh','ls','pad','mar','width','align','imgurl','link'].forEach(id=>{
    const q=document.getElementById(id);if(q)q.oninput=()=>applyProp(id,q.value)
  });
  const fontSelect=document.getElementById('font');
@@ -153,7 +183,48 @@ function buildInspector(){
    const currentFont=cs.fontFamily;
    [...fontSelect.options].forEach(o=>{if(o.value===currentFont)o.selected=true});
  }
- document.getElementById('pcontent').onchange=e=>{pushHistory();setText(selected,e.target.value)}
+ const boldBtn=document.getElementById('boldBtn');
+ const italicBtn=document.getElementById('italicBtn');
+ const underlineBtn=document.getElementById('underlineBtn');
+ const strikeBtn=document.getElementById('strikeBtn');
+ if(boldBtn)boldBtn.onclick=()=>toggleFormat('fontWeight','bold','normal');
+ if(italicBtn)italicBtn.onclick=()=>toggleFormat('fontStyle','italic','normal');
+ if(underlineBtn)underlineBtn.onclick=()=>toggleDecoration('underline');
+ if(strikeBtn)strikeBtn.onclick=()=>toggleDecoration('line-through');
+ document.getElementById('pcontent').oninput=()=>{
+   if(!selected)return;
+   selected.innerHTML=document.getElementById('pcontent').innerHTML;
+ };
+ document.getElementById('pcontent').onblur=()=>{if(selected){pushHistory();buildInspector()}}
+}
+function richCmd(command){
+ const editor=document.getElementById('pcontent');
+ if(!editor)return;
+ editor.focus();
+ document.execCommand(command,false,null);
+ if(selected){
+   selected.innerHTML=editor.innerHTML;
+ }
+}
+function richColor(color){
+ const editor=document.getElementById('pcontent');
+ if(!editor)return;
+ editor.focus();
+ document.execCommand('foreColor',false,color);
+ if(selected)selected.innerHTML=editor.innerHTML;
+}
+function toggleFormat(prop,on,off){
+ if(!selected)return;
+ pushHistory();
+ selected.style[prop]=getComputedStyle(selected)[prop]===on?off:on;
+ buildInspector();
+}
+function toggleDecoration(dec){
+ if(!selected)return;
+ pushHistory();
+ const cur=getComputedStyle(selected).textDecorationLine;
+ selected.style.textDecoration=cur.includes(dec)?'none':dec;
+ buildInspector();
 }
 function setText(el,v){
  const t=el.querySelector('h1,h2,h3,h4,p,span,.sb-btn');if(t)t.innerText=v;else el.innerHTML=v
@@ -164,6 +235,8 @@ function applyProp(id,v){
  if(id==='bg')selected.style.backgroundColor=v;
  if(id==='fs')selected.style.fontSize=v+'px';
  if(id==='font')selected.style.fontFamily=v;
+ if(id==='lh')selected.style.lineHeight=v;
+ if(id==='ls')selected.style.letterSpacing=v;
  if(id==='rad')selected.style.borderRadius=v+'px';
  if(id==='pad'||id==='mar')selected.style[id==='pad'?'padding':'margin']=v;
  if(id==='width')selected.style.width=v;
