@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SiteBuilder V2</title>
+<title>SiteBuilder V3</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#111;color:#eee;overflow:hidden}
 button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -22,6 +22,11 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 .richbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;background:#202020;border:1px solid #3b3b3b;border-radius:6px;padding:5px}
 .richbar .tool{padding:5px 9px}
 .richbar input[type=color]{width:32px;height:30px;padding:2px;background:#222;border:1px solid #444;border-radius:5px}
+.richbar .tool{min-width:32px}
+.richtext a{color:#6ea8ff;text-decoration:underline;cursor:pointer}
+.element[draggable="true"]{cursor:grab}
+.element[draggable="true"]:active{cursor:grabbing}
+
 .richtext{min-height:95px;max-height:220px;overflow:auto;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:9px;outline:none}
 .richtext:focus{border-color:#7c5cff}
 
@@ -35,7 +40,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 <body>
 <div class="app">
 <header class="top">
-  <div class="logo">SiteBuilder <span>V2</span></div>
+  <div class="logo">SiteBuilder <span>V3</span></div>
   <button onclick="newSite()">New</button><button onclick="undo()">↶</button><button onclick="redo()">↷</button>
   <button onclick="saveSite()">Save</button><button onclick="loadSite()">Load</button>
   <button onclick="openExport()">Export</button>
@@ -61,7 +66,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
  <button class="el" onclick="addPreset('cards')">Cards</button>
  <button class="el" onclick="addPreset('about')">About</button>
 </div>
-<div class="status">Drag an element onto the page. Click it to edit. Double-click text to edit directly.</div>
+<div class="status">V3: highlight text to format or link it. Drag elements to reorder them. Double-click text to edit directly.</div>
 </aside>
 
 <main class="stage-wrap" id="wrap">
@@ -103,7 +108,35 @@ function pushHistory(){history.push(stage.innerHTML);if(history.length>50)histor
 function render(){stage.classList.toggle('empty',!stage.children.length);select(selected)}
 function addElement(type,html=null){
  pushHistory(); const el=document.createElement('div'); el.className='element'; el.dataset.type=type;
- el.innerHTML=html||defaults[type].html; el.onclick=e=>{e.stopPropagation();select(el)};
+ el.draggable=true;
+ el.innerHTML=html||defaults[type].html;
+ el.onclick=e=>{e.stopPropagation();select(el)};
+ el.addEventListener('dragstart',e=>{
+   if(e.target===el || !e.target.closest('.richtext')){
+     e.stopPropagation();
+     window.reorderEl=el;
+     e.dataTransfer.effectAllowed='move';
+   }
+ });
+ el.addEventListener('dragover',e=>{
+   if(window.reorderEl && window.reorderEl!==el){
+     e.preventDefault();
+     e.dataTransfer.dropEffect='move';
+   }
+ });
+ el.addEventListener('drop',e=>{
+   if(window.reorderEl && window.reorderEl!==el){
+     e.preventDefault();
+     pushHistory();
+     const r=el.getBoundingClientRect();
+     if(e.clientY<r.top+r.height/2) el.before(window.reorderEl);
+     else el.after(window.reorderEl);
+     window.reorderEl=null;
+     select(el);
+     render();
+   }
+ });
+ el.addEventListener('dragend',()=>window.reorderEl=null);
  el.ondblclick=e=>{if(['text','heading'].includes(type)){e.stopPropagation();editText(el)}};
  stage.appendChild(el); select(el); render();
 }
@@ -137,6 +170,8 @@ function buildInspector(){
    <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyLeft')">≡</button>
    <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyCenter')">☰</button>
    <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('justifyRight')">≡</button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="insertLink()">🔗</button>
+   <button type="button" class="tool" onmousedown="saveRichSelection(event)" onclick="richCmd('unlink')">🔗̸</button>
    <input id="richColor" type="color" title="Text color" value="${rgbHex(cs.color)}" onmousedown="saveRichSelection(event)" onchange="richColor(this.value)">
   </div>
   <div id="pcontent" class="richtext" contenteditable="true">${selected.innerHTML}</div>
@@ -174,8 +209,9 @@ function buildInspector(){
  <div class="field"><label>Align</label><select id="align"><option>left</option><option>center</option><option>right</option></select></div>
  ${selected.dataset.type==='image'?'<div class="field"><label>Image URL</label><input id="imgurl" value="'+(selected.querySelector('img')?.src||'')+'"></div>':''}
  ${selected.dataset.type==='button'?'<div class="field"><label>Button link</label><input id="link" value="'+(selected.querySelector('a')?.href||'#')+'"></div>':''}
+ ${['text','heading'].includes(selected.dataset.type)?'<div class="field"><label>Selected link</label><input id="linkText" placeholder="Select linked text, then edit URL"></div>':''}
  <div class="row"><button class="tool" onclick="duplicate()">Duplicate</button><button class="tool danger" onclick="removeSelected()">Delete</button></div>`;
- ['color','bg','fs','rad','font','lh','ls','pad','mar','width','align','imgurl','link'].forEach(id=>{
+ ['color','bg','fs','rad','font','lh','ls','pad','mar','width','align','imgurl','link','linkText'].forEach(id=>{
    const q=document.getElementById(id);if(q)q.oninput=()=>applyProp(id,q.value)
  });
  const fontSelect=document.getElementById('font');
@@ -236,6 +272,24 @@ function richCmd(command){
    editor.focus({preventScroll:true});
  }
 }
+function insertLink(){
+ const editor=document.getElementById('pcontent');
+ if(!editor)return;
+ if(!restoreRichSelection()){
+   toast('Highlight some text first');
+   return;
+ }
+ const url=prompt('Link URL:', 'https://');
+ if(url===null)return;
+ const clean=url.trim();
+ if(!clean)return;
+ document.execCommand('createLink',false,clean);
+ richSelection=null;
+ if(selected){
+   selected.innerHTML=editor.innerHTML;
+   editor.focus({preventScroll:true});
+ }
+}
 function richColor(color){
  const editor=document.getElementById('pcontent');
  if(!editor)return;
@@ -277,12 +331,43 @@ function applyProp(id,v){
  if(id==='align')selected.style.textAlign=v;
  if(id==='imgurl'&&selected.querySelector('img'))selected.querySelector('img').src=v;
  if(id==='link'&&selected.querySelector('a'))selected.querySelector('a').href=v;
+ if(id==='linkText' && v.trim()){
+   const editor=document.getElementById('pcontent');
+   if(editor){
+     editor.focus();
+     if(restoreRichSelection())document.execCommand('createLink',false,v);
+     selected.innerHTML=editor.innerHTML;
+   }
+ }
 }
 function duplicate(){if(!selected)return;pushHistory();let n=selected.cloneNode(true);n.onclick=e=>{e.stopPropagation();select(n)};n.ondblclick=e=>editText(n);selected.after(n);select(n);render()}
 function removeSelected(){if(!selected)return;pushHistory();selected.remove();selected=null;render()}
 function undo(){if(!history.length)return;future.push(stage.innerHTML);stage.innerHTML=history.pop();rebind();render()}
 function redo(){if(!future.length)return;history.push(stage.innerHTML);stage.innerHTML=future.pop();rebind();render()}
-function rebind(){stage.querySelectorAll('.element').forEach(el=>{el.onclick=e=>{e.stopPropagation();select(el)};el.ondblclick=e=>{if(['text','heading'].includes(el.dataset.type))editText(el)}})}
+function rebind(){
+ stage.querySelectorAll('.element').forEach(el=>{
+   el.draggable=true;
+   el.onclick=e=>{e.stopPropagation();select(el)};
+   el.ondblclick=e=>{if(['text','heading'].includes(el.dataset.type))editText(el)};
+   el.addEventListener('dragstart',e=>{
+     if(e.target.closest('.richtext')){e.preventDefault();return}
+     e.stopPropagation(); window.reorderEl=el;
+     e.dataTransfer.effectAllowed='move';
+   });
+   el.addEventListener('dragover',e=>{
+     if(window.reorderEl && window.reorderEl!==el)e.preventDefault();
+   });
+   el.addEventListener('drop',e=>{
+     if(window.reorderEl && window.reorderEl!==el){
+       e.preventDefault(); pushHistory();
+       const r=el.getBoundingClientRect();
+       if(e.clientY<r.top+r.height/2)el.before(window.reorderEl);else el.after(window.reorderEl);
+       window.reorderEl=null; select(el); render();
+     }
+   });
+   el.addEventListener('dragend',()=>window.reorderEl=null);
+ });
+}
 function rgbHex(c){if(!c||c==='transparent')return '#ffffff';let m=c.match(/\d+/g);return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):'#ffffff'}
 
 function addPreset(kind){
@@ -300,7 +385,7 @@ function togglePreview(){preview=!preview;document.querySelector('.sidebar').sty
 function cleanExport(){
  const clone=stage.cloneNode(true);clone.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'));
  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#111}.element{position:relative;min-height:10px;margin:6px 0;padding:5px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}img{max-width:100%}@media(max-width:600px){.cols{grid-template-columns:1fr}}</style></head><body>${clone.innerHTML}</body></html>`
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#111}.element{position:relative;min-height:10px;margin:6px 0;padding:5px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}a{color:#2563eb}img{max-width:100%}@media(max-width:600px){.cols{grid-template-columns:1fr}}</style></head><body>${clone.innerHTML}</body></html>`
 }
 function openExport(){document.getElementById('exportText').value=cleanExport();document.getElementById('modal').classList.add('show')}
 function closeExport(){document.getElementById('modal').classList.remove('show')}
