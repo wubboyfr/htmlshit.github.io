@@ -121,6 +121,21 @@ function buildInspector(){
   <div class="field"><label>Font size</label><input id="fs" type="number" value="${parseInt(cs.fontSize)||16}"></div>
   <div class="field"><label>Radius</label><input id="rad" type="number" value="${parseInt(cs.borderRadius)||0}"></div>
  </div>
+ <div class="field"><label>Font</label>
+  <select id="font">
+   <option value="Arial, sans-serif">Arial</option>
+   <option value="Georgia, serif">Georgia</option>
+   <option value="'Times New Roman', serif">Times New Roman</option>
+   <option value="Verdana, sans-serif">Verdana</option>
+   <option value="Tahoma, sans-serif">Tahoma</option>
+   <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+   <option value="'Courier New', monospace">Courier New</option>
+   <option value="Impact, sans-serif">Impact</option>
+   <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+   <option value="system-ui, sans-serif">System UI</option>
+   <option value="monospace">Monospace</option>
+  </select>
+ </div>
  <div class="grid2">
   <div class="field"><label>Padding</label><input id="pad" value="${cs.padding}"></div>
   <div class="field"><label>Margin</label><input id="mar" value="${cs.margin}"></div>
@@ -130,9 +145,14 @@ function buildInspector(){
  ${selected.dataset.type==='image'?'<div class="field"><label>Image URL</label><input id="imgurl" value="'+(selected.querySelector('img')?.src||'')+'"></div>':''}
  ${selected.dataset.type==='button'?'<div class="field"><label>Button link</label><input id="link" value="'+(selected.querySelector('a')?.href||'#')+'"></div>':''}
  <div class="row"><button class="tool" onclick="duplicate()">Duplicate</button><button class="tool danger" onclick="removeSelected()">Delete</button></div>`;
- ['color','bg','fs','rad','pad','mar','width','align','imgurl','link'].forEach(id=>{
+ ['color','bg','fs','rad','font','pad','mar','width','align','imgurl','link'].forEach(id=>{
    const q=document.getElementById(id);if(q)q.oninput=()=>applyProp(id,q.value)
  });
+ const fontSelect=document.getElementById('font');
+ if(fontSelect){
+   const currentFont=cs.fontFamily;
+   [...fontSelect.options].forEach(o=>{if(o.value===currentFont)o.selected=true});
+ }
  document.getElementById('pcontent').onchange=e=>{pushHistory();setText(selected,e.target.value)}
 }
 function setText(el,v){
@@ -143,6 +163,7 @@ function applyProp(id,v){
  if(id==='color')selected.style.color=v;
  if(id==='bg')selected.style.backgroundColor=v;
  if(id==='fs')selected.style.fontSize=v+'px';
+ if(id==='font')selected.style.fontFamily=v;
  if(id==='rad')selected.style.borderRadius=v+'px';
  if(id==='pad'||id==='mar')selected.style[id==='pad'?'padding':'margin']=v;
  if(id==='width')selected.style.width=v;
