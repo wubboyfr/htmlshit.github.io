@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SiteBuilder V4</title>
+<title>SiteBuilder V5</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#111;color:#eee;overflow:hidden}
 button,input,select,textarea{font:inherit}button{cursor:pointer}
@@ -15,17 +15,18 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 .palette{display:grid;grid-template-columns:1fr 1fr;gap:8px}.el{background:#222;border:1px solid #373737;border-radius:8px;padding:12px 7px;text-align:center;color:#ddd}.el:hover{border-color:#7c5cff;background:#29233d}
 .stage-wrap{background:#0d0d0d;overflow:auto;padding:35px;display:flex;justify-content:center;align-items:flex-start}
-.stage{background:white;color:#111;width:900px;min-height:650px;box-shadow:0 12px 45px #000;position:relative;padding:28px;transition:.2s;box-sizing:border-box;flex:0 0 900px}
-.stage.mobile{width:390px;min-height:700px;flex-basis:390px}.stage.empty:after{content:"Drop elements here";position:absolute;inset:30px;border:2px dashed #bbb;display:grid;place-items:center;color:#aaa;font-size:20px;pointer-events:none}
-.element{position:relative;min-height:10px;margin:6px 0;padding:5px;outline:1px solid transparent;box-sizing:border-box;max-width:100%}.element:hover{outline:1px dashed #8b72ff}.element.selected{outline:2px solid #7c5cff}.element img{max-width:100%;display:block}.element button{border:0}
+.stage{background:white;color:#111;width:900px;height:650px;min-height:650px;box-shadow:0 12px 45px #000;position:relative;padding:0;transition:.2s;box-sizing:border-box;flex:0 0 900px;overflow:hidden}
+.stage.mobile{width:390px;height:700px;min-height:700px;flex-basis:390px}.stage.empty:after{content:"Drop elements here";position:absolute;inset:30px;border:2px dashed #bbb;display:grid;place-items:center;color:#aaa;font-size:20px;pointer-events:none}
+.element{position:absolute;left:0;top:0;min-height:10px;margin:0;padding:5px;outline:1px solid transparent;box-sizing:border-box;max-width:100%;user-select:none}.element:hover{outline:1px dashed #8b72ff}.element.selected{outline:2px solid #7c5cff}.element img{max-width:100%;display:block}.element button{border:0}
 .row{display:flex;gap:7px}.field{margin-bottom:12px}.field label{display:block;font-size:11px;color:#aaa;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:8px}.field textarea{min-height:75px;resize:vertical}
 .richbar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;background:#202020;border:1px solid #3b3b3b;border-radius:6px;padding:5px}
 .richbar .tool{padding:5px 9px}
 .richbar input[type=color]{width:32px;height:30px;padding:2px;background:#222;border:1px solid #444;border-radius:5px}
 .richbar .tool{min-width:32px}
 .richtext a{color:#6ea8ff;text-decoration:underline;cursor:pointer}
-.element[draggable="true"]{cursor:grab}
-.element[draggable="true"]:active{cursor:grabbing}
+.element[draggable="true"]{cursor:grab}.element.moving{cursor:grabbing;z-index:9999}.element[contenteditable="true"],.richtext{user-select:text}
+.guides{position:absolute;inset:0;pointer-events:none;z-index:10000}.guide{position:absolute;display:none;pointer-events:none}.guide.v{top:0;bottom:0;width:1px;background:#4da3ff;box-shadow:0 0 0 1px #4da3ff55}.guide.h{left:0;right:0;height:1px;background:#4da3ff;box-shadow:0 0 0 1px #4da3ff55}
+.align-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#202020;border:1px solid #333;padding:4px;border-radius:8px}.align-grid button{height:32px;background:#292929;color:#ddd;border:1px solid #3b3b3b;border-radius:5px;font-size:15px}.align-grid button:hover{background:#3b315f;border-color:#7c5cff}.move-help{font-size:10px;color:#888;margin-top:5px}
 
 .richtext{min-height:95px;max-height:220px;overflow:auto;background:#222;color:#eee;border:1px solid #3b3b3b;border-radius:6px;padding:9px;outline:none}
 .richtext:focus{border-color:#7c5cff}
@@ -40,7 +41,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
 <body>
 <div class="app">
 <header class="top">
-  <div class="logo">SiteBuilder <span style="color:#ff8a00">V4</span></div>
+  <div class="logo">SiteBuilder <span style="color:#ff8a00">V5</span></div>
   <button onclick="newSite()">New</button><button onclick="undo()">↶</button><button onclick="redo()">↷</button>
   <button onclick="saveSite()">Save</button><button onclick="loadSite()">Load</button>
   <button onclick="openExport()">Export</button>
@@ -67,11 +68,12 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
  <button class="el" onclick="addPreset('cards')">Cards</button>
  <button class="el" onclick="addPreset('about')">About</button>
 </div>
-<div class="status">V4: accurate preview sizing + JavaScript blocks. 900px desktop / 390px mobile.</div>
+<div class="status">V5: preview = exported page size. 900px desktop / 390px mobile.</div>
 </aside>
 
 <main class="stage-wrap" id="wrap">
  <div class="stage empty" id="stage" onclick="stageClick(event)" ondragover="event.preventDefault()" ondrop="dropElement(event)">
+  <div class="guides" id="guides"><i class="guide v" id="guideV"></i><i class="guide h" id="guideH"></i></div>
  </div>
 </main>
 
@@ -85,6 +87,7 @@ h3{font-size:12px;text-transform:uppercase;color:#888;margin:7px 0 10px}
  <div style="display:flex;align-items:center"><b>Export HTML</b><button style="margin-left:auto" onclick="closeExport()">✕</button></div>
  <textarea id="exportText"></textarea>
  <div><button class="tool" onclick="copyExport()">Copy HTML</button><button class="tool" onclick="downloadExport()">Download HTML</button></div>
+ <div class="status">The exported page uses the same 900px canvas as the desktop preview, so elements should no longer stretch.</div>
 </div></div>
 <div class="toast" id="toast"></div>
 
@@ -106,45 +109,77 @@ document.querySelectorAll('.el[draggable]').forEach(x=>{
 });
 
 function pushHistory(){history.push(stage.innerHTML);if(history.length>50)history.shift();future=[]}
-function render(){stage.classList.toggle('empty',!stage.children.length);select(selected)}
-function addElement(type,html=null){
+function render(){stage.classList.toggle('empty',!stage.querySelector('.element'));select(selected);updateStageSize()}
+function stagePoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function placeElement(el,x,y){
+ const maxX=Math.max(0,stage.clientWidth-el.offsetWidth), maxY=Math.max(0,stage.clientHeight-el.offsetHeight);
+ x=Math.max(0,Math.min(x,maxX)); y=Math.max(0,Math.min(y,maxY));
+ el.style.left=Math.round(x)+'px';el.style.top=Math.round(y)+'px';
+}
+function updateStageSize(){
+ let bottom=650;
+ stage.querySelectorAll('.element').forEach(el=>{bottom=Math.max(bottom,(parseFloat(el.style.top)||0)+el.offsetHeight+30)});
+ const h=Math.max(stage.classList.contains('mobile')?700:650,Math.ceil(bottom));
+ stage.style.height=h+'px'; stage.style.minHeight=h+'px';
+}
+function addElement(type,html=null,x=null,y=null){
  pushHistory(); const el=document.createElement('div'); el.className='element'; el.dataset.type=type;
- el.draggable=true;
+ el.draggable=false;
  el.innerHTML=html||defaults[type].html;
  if(type==='script') el.dataset.script='// Write JavaScript here\n';
- el.onclick=e=>{e.stopPropagation();select(el)};
- el.addEventListener('dragstart',e=>{
-   if(e.target===el || !e.target.closest('.richtext')){
-     e.stopPropagation();
-     window.reorderEl=el;
-     e.dataTransfer.effectAllowed='move';
-   }
- });
- el.addEventListener('dragover',e=>{
-   if(window.reorderEl && window.reorderEl!==el){
-     e.preventDefault();
-     e.dataTransfer.dropEffect='move';
-   }
- });
- el.addEventListener('drop',e=>{
-   if(window.reorderEl && window.reorderEl!==el){
-     e.preventDefault();
-     pushHistory();
-     const r=el.getBoundingClientRect();
-     if(e.clientY<r.top+r.height/2) el.before(window.reorderEl);
-     else el.after(window.reorderEl);
-     window.reorderEl=null;
-     select(el);
-     render();
-   }
- });
- el.addEventListener('dragend',()=>window.reorderEl=null);
- el.ondblclick=e=>{if(['text','heading'].includes(type)){e.stopPropagation();editText(el)}};
- stage.appendChild(el); select(el); render();
+ stage.appendChild(el);
+ // Put new elements where dropped, otherwise cascade instead of always stacking at 0,0.
+ const count=stage.querySelectorAll('.element').length-1;
+ if(x===null)x=28+(count%5)*24;
+ if(y===null)y=28+(count%5)*24;
+ placeElement(el,x,y);
+ bindElement(el); select(el); render();
 }
-function dropElement(e){e.preventDefault();if(draggingType)addElement(draggingType);draggingType=null}
-function stageClick(){select(null)}
-function select(el){selected=el;document.querySelectorAll('.element').forEach(x=>x.classList.toggle('selected',x===el));buildInspector()}
+function dropElement(e){
+ e.preventDefault();
+ if(!draggingType)return;
+ const p=stagePoint(e); addElement(draggingType,p.x,p.y); draggingType=null;
+}
+function stageClick(e){if(e.target===stage || e.target.id==='guides')select(null)}
+function select(el){selected=el;document.querySelectorAll('.element').forEach(x=>x.classList.toggle('selected',x===el));buildInspector();}
+
+let moveState=null;
+const SNAP=7;
+function clearGuides(){document.getElementById('guideV').style.display='none';document.getElementById('guideH').style.display='none'}
+function showGuide(axis,pos){const g=document.getElementById(axis==='x'?'guideV':'guideH');g.style.display='block';if(axis==='x')g.style.left=Math.round(pos)+'px';else g.style.top=Math.round(pos)+'px'}
+function snapPosition(el,x,y){
+ const ew=el.offsetWidth, eh=el.offsetHeight, W=stage.clientWidth, H=stage.clientHeight;
+ let sx=x, sy=y, bestX=SNAP+1, bestY=SNAP+1; clearGuides();
+ const xTargets=[{p:0,g:0},{p:(W-ew)/2,g:W/2},{p:W-ew,g:W}];
+ const yTargets=[{p:0,g:0},{p:(H-eh)/2,g:H/2},{p:H-eh,g:H}];
+ stage.querySelectorAll('.element').forEach(o=>{if(o===el)return;const ox=parseFloat(o.style.left)||0, oy=parseFloat(o.style.top)||0, ow=o.offsetWidth, oh=o.offsetHeight;
+   [ox-ew,ox+(ow-ew)/2,ox+ow].forEach((target,i)=>xTargets.push({p:target,g:i===0?ox:(i===1?ox+ow/2:ox+ow)}));
+   [oy-eh,oy+(oh-eh)/2,oy+oh].forEach((target,i)=>yTargets.push({p:target,g:i===0?oy:(i===1?oy+oh/2:oy+oh)}));
+ });
+ for(const t of xTargets){const d=Math.abs(x-t.p);if(d<bestX){bestX=d;sx=t.p}}
+ for(const t of yTargets){const d=Math.abs(y-t.p);if(d<bestY){bestY=d;sy=t.p}}
+ if(bestX<=SNAP){let guideX=0; for(const t of xTargets)if(Math.abs(sx-t.p)<.5){guideX=t.g;break} showGuide('x',guideX)}
+ if(bestY<=SNAP){let guideY=0; for(const t of yTargets)if(Math.abs(sy-t.p)<.5){guideY=t.g;break} showGuide('y',guideY)}
+ return {x:sx,y:sy};
+}
+function beginMove(e,el){
+ if(e.button!==0 || e.target.closest('a,input,button,textarea,select,.richtext'))return;
+ e.preventDefault();e.stopPropagation();select(el);pushHistory();
+ const p=stagePoint(e); const x=parseFloat(el.style.left)||0,y=parseFloat(el.style.top)||0;
+ moveState={el,startX:p.x,startY:p.y,origX:x,origY:y};el.classList.add('moving');
+ window.addEventListener('pointermove',moveElement);window.addEventListener('pointerup',endMove,{once:true});
+}
+function moveElement(e){if(!moveState)return;const p=stagePoint(e);let dx=p.x-moveState.startX,dy=p.y-moveState.startY;
+ if(e.shiftKey){if(Math.abs(dx)>=Math.abs(dy))dy=0;else dx=0}
+ let pos=snapPosition(moveState.el,moveState.origX+dx,moveState.origY+dy);placeElement(moveState.el,pos.x,pos.y);updateStageSize();
+}
+function endMove(){if(!moveState)return;moveState.el.classList.remove('moving');moveState=null;clearGuides();updateStageSize();window.removeEventListener('pointermove',moveElement);}
+function bindElement(el){
+ el.draggable=false;
+ el.onclick=e=>{e.stopPropagation();select(el)};
+ el.ondblclick=e=>{if(['text','heading'].includes(el.dataset.type)){e.stopPropagation();editText(el)}};
+ el.onpointerdown=e=>beginMove(e,el);
+}
 function saveElementScript(){if(!selected)return;selected.dataset.script=document.getElementById('scriptCode').value;toast('Script saved!')}
 function editText(el){
  const target=el.querySelector('h1,h2,h3,h4,p,span');
@@ -211,6 +246,14 @@ function buildInspector(){
  <div class="grid2">
   <div class="field"><label>Padding</label><input id="pad" value="${cs.padding}"></div>
   <div class="field"><label>Margin</label><input id="mar" value="${cs.margin}"></div>
+ </div>
+ <div class="field"><label>Position</label>
+  <div class="align-grid">
+   <button title="Top left" onclick="alignSelected('tl')">↖</button><button title="Top center" onclick="alignSelected('tc')">↑</button><button title="Top right" onclick="alignSelected('tr')">↗</button>
+   <button title="Middle left" onclick="alignSelected('ml')">←</button><button title="Center" onclick="alignSelected('c')">•</button><button title="Middle right" onclick="alignSelected('mr')">→</button>
+   <button title="Bottom left" onclick="alignSelected('bl')">↙</button><button title="Bottom center" onclick="alignSelected('bc')">↓</button><button title="Bottom right" onclick="alignSelected('br')">↘</button>
+  </div>
+  <div class="move-help">Drag freely. Snaps to edges, centers and other objects like PowerPoint. Arrow keys nudge; Shift = 10px.</div>
  </div>
  <div class="field"><label>Width</label><select id="width"><option value="auto">Auto</option><option value="100%">100%</option><option value="50%">50%</option><option value="fit-content">Fit content</option></select></div>
  <div class="field"><label>Align</label><select id="align"><option>left</option><option>center</option><option>right</option></select></div>
@@ -347,34 +390,17 @@ function applyProp(id,v){
    }
  }
 }
+function alignSelected(where){
+ if(!selected)return; pushHistory(); const W=stage.clientWidth,H=stage.clientHeight,w=selected.offsetWidth,h=selected.offsetHeight;
+ const map={tl:[0,0],tc:[(W-w)/2,0],tr:[W-w,0],ml:[0,(H-h)/2],c:[(W-w)/2,(H-h)/2],mr:[W-w,(H-h)/2],bl:[0,H-h],bc:[(W-w)/2,H-h],br:[W-w,H-h]};
+ const p=map[where]; if(!p)return;placeElement(selected,p[0],p[1]);clearGuides();updateStageSize();select(selected);toast('Aligned!');
+}
+function nudgeSelected(dx,dy){if(!selected)return;pushHistory();placeElement(selected,(parseFloat(selected.style.left)||0)+dx,(parseFloat(selected.style.top)||0)+dy);updateStageSize()}
 function duplicate(){if(!selected)return;pushHistory();let n=selected.cloneNode(true);n.onclick=e=>{e.stopPropagation();select(n)};n.ondblclick=e=>editText(n);selected.after(n);select(n);render()}
 function removeSelected(){if(!selected)return;pushHistory();selected.remove();selected=null;render()}
 function undo(){if(!history.length)return;future.push(stage.innerHTML);stage.innerHTML=history.pop();rebind();render()}
 function redo(){if(!future.length)return;history.push(stage.innerHTML);stage.innerHTML=future.pop();rebind();render()}
-function rebind(){
- stage.querySelectorAll('.element').forEach(el=>{
-   el.draggable=true;
-   el.onclick=e=>{e.stopPropagation();select(el)};
-   el.ondblclick=e=>{if(['text','heading'].includes(el.dataset.type))editText(el)};
-   el.addEventListener('dragstart',e=>{
-     if(e.target.closest('.richtext')){e.preventDefault();return}
-     e.stopPropagation(); window.reorderEl=el;
-     e.dataTransfer.effectAllowed='move';
-   });
-   el.addEventListener('dragover',e=>{
-     if(window.reorderEl && window.reorderEl!==el)e.preventDefault();
-   });
-   el.addEventListener('drop',e=>{
-     if(window.reorderEl && window.reorderEl!==el){
-       e.preventDefault(); pushHistory();
-       const r=el.getBoundingClientRect();
-       if(e.clientY<r.top+r.height/2)el.before(window.reorderEl);else el.after(window.reorderEl);
-       window.reorderEl=null; select(el); render();
-     }
-   });
-   el.addEventListener('dragend',()=>window.reorderEl=null);
- });
-}
+function rebind(){stage.querySelectorAll('.element').forEach(el=>bindElement(el));updateStageSize()}
 function rgbHex(c){if(!c||c==='transparent')return '#ffffff';let m=c.match(/\d+/g);return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):'#ffffff'}
 
 function addPreset(kind){
@@ -391,16 +417,31 @@ function newSite(){if(confirm('Start a new site?')){pushHistory();stage.innerHTM
 function togglePreview(){preview=!preview;document.querySelector('.sidebar').style.display=preview?'none':'';document.querySelector('.props').style.display=preview?'none':'';document.querySelector('.top').style.gridColumn=preview?'1/4':'';document.querySelector('.stage-wrap').style.gridColumn=preview?'1/4':''}
 function cleanExport(){
  const clone=stage.cloneNode(true);
- clone.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'));
+ clone.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected')); clone.querySelector('#guides')?.remove();
  clone.querySelectorAll('[data-script]').forEach(x=>{const sc=document.createElement('script');sc.textContent=x.dataset.script||'';x.replaceWith(sc)});
- return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><style>*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:Arial,sans-serif;color:#111;background:#fff}.site-page{width:900px;min-height:650px;margin:0 auto;padding:28px;box-sizing:border-box}.element{position:relative;min-height:10px;margin:6px 0;padding:5px;box-sizing:border-box;max-width:100%}.element img{max-width:100%;height:auto;display:block}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}a{color:#2563eb}@media(max-width:900px){.site-page{width:100%;margin:0}}@media(max-width:600px){.site-page{width:390px;max-width:100%;margin:0 auto}.cols{grid-template-columns:1fr}}</style></head><body><div class="site-page">${clone.innerHTML}</div></body></html>`;
+ // IMPORTANT: export the CONTENT of the editor page, not the editor's .stage wrapper.
+ // The old version exported the stage wrapper without its editor-only width rules,
+ // which made the live site expand to the browser viewport.
+ const content=clone.innerHTML.replace(/<div class=\"guides\"[\s\S]*?<\/div>\n?/, ''); const pageH=stage.clientHeight;
+ return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>My Website</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff}
+body{font-family:Arial,sans-serif;color:#111;overflow-x:auto}
+.site-page{width:900px;min-width:900px;min-height:650px;height:650px;margin:0 auto;position:relative;box-sizing:border-box;background:#fff;overflow:hidden}
+.element{position:absolute;min-height:10px;margin:0;padding:5px;box-sizing:border-box;max-width:100%}
+.element img{max-width:100%;height:auto;display:block}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.sb-btn{display:inline-block;text-decoration:none;padding:10px 18px;background:#7c5cff;color:white;border-radius:7px}
+a{color:#2563eb}
+@media(max-width:900px){.site-page{width:390px;min-width:390px;height:700px;margin:0 auto}.cols{grid-template-columns:1fr}}
+</style></head><body><main class="site-page" style="height:${pageH}px;min-height:${pageH}px">${content}</main></body></html>`;
 }
 function openExport(){document.getElementById('exportText').value=cleanExport();document.getElementById('modal').classList.add('show')}
 function closeExport(){document.getElementById('modal').classList.remove('show')}
 async function copyExport(){await navigator.clipboard.writeText(document.getElementById('exportText').value);toast('Copied HTML!')}
 function downloadExport(){const b=new Blob([document.getElementById('exportText').value],{type:'text/html'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='index.html';a.click();URL.revokeObjectURL(a.href)}
 function toast(t){const x=document.getElementById('toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),1300)}
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}if(e.key==='Delete'&&selected&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))removeSelected()});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}if(e.key==='Delete'&&selected&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))removeSelected();if(selected&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();const n=e.shiftKey?10:1;nudgeSelected(e.key==='ArrowLeft'?-n:e.key==='ArrowRight'?n:0,e.key==='ArrowUp'?-n:e.key==='ArrowDown'?n:0)}});
 render();
 </script>
 </body>
